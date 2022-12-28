@@ -128,17 +128,17 @@ product.addProduct('Producto 2', 'Descripcion producto 2', 500, 'xxxxxx.com', 'x
 product.addProduct('Producto 3', 'Descripcion producto 3', 1000, 'xxxxxx.com', 'ads789', 1000)
 
 // Consultar Productos Todos
-product.getProducts()
+// product.getProducts()
 
 //Buscar producto por ID:
-product.getProductById(1)
-product.getProductById(2)
+// product.getProductById(1)
+// product.getProductById(2)
 
 //Producto no encontrado:
-product.getProductById(9)
+// product.getProductById(9)
 
 // Actualizar productos:
-product.updateProduct(2, {"title":'prueba cambiada'})
+// product.updateProduct(2, {"title":'prueba cambiada'})
 
 //Eliminar producto:
-product.deleteProduct(1)
+// product.deleteProduct(1)
