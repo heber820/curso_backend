@@ -1,144 +1,134 @@
-const fs = require('fs')
-const { title } = require('process')
+import fs from 'fs'
 
-class ProductManager {
-
+export class ProductManager {
   constructor() {
-    this.products = []
-    this.path = './archivos/products.json'
+    this.products = [];
+    this.path = "./archivos/products.json";
   }
 
-  async getProducts(){
-    try{
-      if(fs.existsSync(this.path)){
-        const infoProducts = await fs.promises.readFile(this.path, 'utf-8')
-        const infoProductsJS = JSON.parse(infoProducts)
-        return console.log(infoProductsJS)
+  async getProducts(limit) {
+    if (fs.existsSync(this.path)) {
+      const products = await fs.promises.readFile(this.path, "utf-8");
+      if (limit === "max") {
+        return JSON.parse(products);
       } else {
-        return []
+        return JSON.parse(products).slice(0, limit);
       }
-    } catch(error){
-      console.log(error)
+    } else {
+      return [];
     }
   }
 
 
   async addProduct(title, description, price, thumbnail, code, stock) {
     try {
-    if(!title || !description || !price || !thumbnail || !code || !stock) {
-      return console.log('Error, deberá incorporar los campos obligatorios');
-    } else {
-        const isCode = this.#evaluarCode(code)
-        if(isCode){
-          console.log('El código ya existe, intenta nuevamente')
+      if (!title || !description || !price || !thumbnail || !code || !stock) {
+        return console.log("Error, deberá incorporar los campos obligatorios");
+      } else {
+        const isCode = this.#evaluarCode(code);
+        if (isCode) {
+          console.log("El código ya existe, intenta nuevamente");
         } else {
           const product = {
-            id: this.#generarId(), 
+            id: await this.#generarId(),
             title,
             description,
             price,
             thumbnail,
             code,
             stock,
-          }
-          this.products.push(product)
-          await fs.promises.writeFile(this.path, JSON.stringify(this.products, null, 2))
-        } 
+          };
+          const products = await this.getProducts();
+          products.push(product);
+          await fs.promises.writeFile(this.path, JSON.stringify(products));
+        }
+      }
+    } catch (error) {
+      console.log(error);
     }
-    } catch(error) {
-      console.log(error)
-    } 
   }
 
   async getProductById(idProduct){
-    try {
-      if (fs.existsSync(this.path)){
-        await fs.promises.readFile(this.path, 'utf-8')
-        const productFound = this.#evaluarProductoId(idProduct)
-        if(productFound){
-          console.log(productFound)
-          return productFound
-        } else {
-          console.log('Producto no encontrado')
+    const products = await this.getProducts()
+    const product = products.find((e)=> e.id === parseInt(idProduct))
+    if (product){
+      return product
+    } else {
+      return 'Producto no encontrado'
+    }
+  }
+
+  async updateProduct(idProduct, change) {
+    let read = await fs.promises.readFile(this.path, "utf-8");
+    read = JSON.parse(read);
+    let product = await this.getProductById(idProduct);
+    if (product) {
+      product = { ...product, ...change };
+      read = read.map((prod) => {
+        if (prod.id == product.id) {
+          prod = product;
         }
-      }
-    } catch(error) {
-      console.log(error)
+        return prod;
+      });
+      read = JSON.stringify(read, null, 2);
+      await fs.promises.writeFile(this.path, read);
+      console.log(JSON.parse(read));
+      return read;
+    } else {
+      return null;
     }
   }
 
-  async updateProduct(idProduct, change){
-    let read = await fs.promises.readFile(this.path, 'utf-8')
-    read = JSON.parse(read)
-    let product = await this.getProductById(idProduct)
-    if(product){
-      product = {...product, ...change}
-      read = read.map(prod => {
-        if(prod.id == product.id){
-          prod = product
-        }
-        return prod
-      })
-      read = JSON.stringify(read, null, 2)
-      await fs.promises.writeFile(this.path, read)
-      console.log(JSON.parse(read))
-      return read
-    }else{
-      return null
+  async deleteProduct(idProduct) {
+    let read = await fs.promises.readFile(this.path, "utf-8");
+    read = JSON.parse(read);
+    let product = await this.getProductById(idProduct);
+    if (product) {
+      const filtrado = read.filter((prod) => prod.id != idProduct);
+      await fs.promises.writeFile(this.path, JSON.stringify(filtrado, null, 2));
+      return filtrado;
     }
   }
 
-  async deleteProduct(idProduct){
-    let read = await fs.promises.readFile(this.path, 'utf-8')
-    read = JSON.parse(read)
-    let product = await this.getProductById(idProduct)
-    if(product){
-      const filtrado =read.filter(prod => prod.id != idProduct)
-      await fs.promises.writeFile(this.path, JSON.stringify(filtrado, null, 2))
-      return filtrado
-    }
+  async #generarId() {
+    const products = await this.getProducts();
+    let id = products.length === 0 ? 1 : products[products.length - 1].id + 1;
+    return id;
   }
 
-
-  #generarId() {
-    let id =
-      this.products.length === 0
-        ? 1
-        : this.products[this.products.length - 1].id + 1
-    return id
+  #evaluarProductoId(id) {
+    return this.products.find((product) => product.id === id);
   }
 
-  #evaluarProductoId(id){
-    return this.products.find(product => product.id === id)
-  }
-
-  #evaluarCode(code){
-    return this.products.find(product => product.code === code)
+  #evaluarCode(code) {
+    return this.products.find((product) => product.code === code);
   }
 }
 
-const product = new ProductManager()
-
+// const product = new ProductManager('products.json');
 
 //PRUEBAS
 
-// Nuevo Producto:
-product.addProduct('Producto 1', 'Descripcion producto 1', 200, 'xxxxxx.com', 'abc123', 50)
-product.addProduct('Producto 2', 'Descripcion producto 2', 500, 'xxxxxx.com', 'xyz123', 20)
-product.addProduct('Producto 3', 'Descripcion producto 3', 1000, 'xxxxxx.com', 'ads789', 1000)
+// async function prueba() {
+//   // await product.addProduct(
+//   //   "Producto 3",
+//   //   "Descripcion 3",
+//   //   50,
+//   //   "ssss.com",
+//   //   "oooo",
+//   //   50
+//   // );
+//   // await product.addProduct(
+//   //   "Producto 4",
+//   //   "Descripcion 4",
+//   //   20,
+//   //   "ssss.com",
+//   //   "oooo",
+//   //   50
+//   // );
 
-// Consultar Productos Todos
-// product.getProducts()
+// const product = await product.getProductById(1)
+// console.log(product)
+// }
 
-//Buscar producto por ID:
-// product.getProductById(1)
-// product.getProductById(2)
-
-//Producto no encontrado:
-// product.getProductById(9)
-
-// Actualizar productos:
-// product.updateProduct(2, {"title":'prueba cambiada'})
-
-//Eliminar producto:
-// product.deleteProduct(1)
+// prueba();
